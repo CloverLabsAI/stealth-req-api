@@ -51,7 +51,9 @@ export function createStealthClient(config: StealthClientConfig = {}): AxiosInst
   const proxyClient = axios.create({
     baseURL,
     timeout: timeout + 5000, // Add buffer for proxy timeout
-    headers: proxySecret ? { 'X-Proxy-Secret': proxySecret } : {}
+    headers: proxySecret ? { 'X-Proxy-Secret': proxySecret } : {},
+    // Disable automatic decompression - the TLS client already handles this
+    decompress: false
   });
 
   // Create the stealth client with custom request interceptor

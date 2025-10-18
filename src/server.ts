@@ -126,10 +126,16 @@ fastify.post<{ Body: ProxyRequestBody }>('/proxy', async (request: FastifyReques
       });
     }
 
-    // Set response headers if they exist
+    // Set response headers if they exist, but filter out compression-related headers
+    // The TLS client already decompresses the response, so we don't want the end client
+    // to try decompressing again (which causes Z_DATA_ERROR)
     if (response.headers && typeof response.headers === 'object') {
       Object.entries(response.headers).forEach(([key, value]) => {
-        reply.header(key, value);
+        const lowerKey = key.toLowerCase();
+        // Skip content-encoding and content-length as they're invalid after decompression
+        if (lowerKey !== 'content-encoding' && lowerKey !== 'content-length') {
+          reply.header(key, value);
+        }
       });
     }
 
@@ -183,10 +189,16 @@ fastify.get<{ Querystring: ProxyQueryParams }>('/proxy', async (request: Fastify
     const session = new SessionClient(tlsClient, sessionOptions);
     const response = await session.get(url);
 
-    // Set response headers if they exist
+    // Set response headers if they exist, but filter out compression-related headers
+    // The TLS client already decompresses the response, so we don't want the end client
+    // to try decompressing again (which causes Z_DATA_ERROR)
     if (response.headers && typeof response.headers === 'object') {
       Object.entries(response.headers).forEach(([key, value]) => {
-        reply.header(key, value);
+        const lowerKey = key.toLowerCase();
+        // Skip content-encoding and content-length as they're invalid after decompression
+        if (lowerKey !== 'content-encoding' && lowerKey !== 'content-length') {
+          reply.header(key, value);
+        }
       });
     }
 
