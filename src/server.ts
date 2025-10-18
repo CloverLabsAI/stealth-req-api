@@ -139,10 +139,14 @@ fastify.post<{ Body: ProxyRequestBody }>('/proxy', async (request: FastifyReques
       });
     }
 
-    // Return the response body directly
+    // Convert Uint8Array to Buffer if needed, otherwise send as-is
+    const responseBody = response.body instanceof Uint8Array 
+      ? Buffer.from(response.body) 
+      : response.body;
+
     return reply
       .code(response.status || 200)
-      .send(response.body);
+      .send(responseBody);
 
   } catch (error: any) {
     request.log.error(error);
@@ -202,10 +206,14 @@ fastify.get<{ Querystring: ProxyQueryParams }>('/proxy', async (request: Fastify
       });
     }
 
-    // Return the response body directly
+    // Convert Uint8Array to Buffer if needed, otherwise send as-is
+    const responseBody = response.body instanceof Uint8Array 
+      ? Buffer.from(response.body) 
+      : response.body;
+
     return reply
       .code(response.status || 200)
-      .send(response.body);
+      .send(responseBody);
 
   } catch (error: any) {
     request.log.error(error);
