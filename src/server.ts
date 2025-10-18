@@ -128,7 +128,6 @@ fastify.post<{ Body: ProxyRequestBody }>('/proxy', async (request: FastifyReques
 
     // Set response headers if they exist, excluding compression headers
     // tlsclientwrapper already decompresses the response
-    const contentType = response.headers?.['content-type'] || response.headers?.['Content-Type'] || '';
     if (response.headers && typeof response.headers === 'object') {
       const compressionHeaders = ['content-encoding', 'content-length', 'transfer-encoding'];
       Object.entries(response.headers).forEach(([key, value]) => {
@@ -138,9 +137,9 @@ fastify.post<{ Body: ProxyRequestBody }>('/proxy', async (request: FastifyReques
       });
     }
 
-    // Handle response body - if it's an object and content-type is JSON, stringify it
+    // Stringify response body if it's not already a string
     let responseBody = response.body;
-    if (typeof responseBody === 'object' && responseBody !== null && contentType.includes('application/json')) {
+    if (typeof responseBody !== 'string') {
       responseBody = JSON.stringify(responseBody);
     }
 
@@ -196,7 +195,6 @@ fastify.get<{ Querystring: ProxyQueryParams }>('/proxy', async (request: Fastify
 
     // Set response headers if they exist, excluding compression headers
     // tlsclientwrapper already decompresses the response
-    const contentType = response.headers?.['content-type'] || response.headers?.['Content-Type'] || '';
     if (response.headers && typeof response.headers === 'object') {
       const compressionHeaders = ['content-encoding', 'content-length', 'transfer-encoding'];
       Object.entries(response.headers).forEach(([key, value]) => {
@@ -206,9 +204,9 @@ fastify.get<{ Querystring: ProxyQueryParams }>('/proxy', async (request: Fastify
       });
     }
 
-    // Handle response body - if it's an object and content-type is JSON, stringify it
+    // Stringify response body if it's not already a string
     let responseBody = response.body;
-    if (typeof responseBody === 'object' && responseBody !== null && contentType.includes('application/json')) {
+    if (typeof responseBody !== 'string') {
       responseBody = JSON.stringify(responseBody);
     }
 
