@@ -1,26 +1,38 @@
-import Fastify from 'fastify';
+import Fastify, { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import cors from '@fastify/cors';
 import { ModuleClient, SessionClient } from 'tlsclientwrapper';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const fastify = Fastify({
-  logger: true,
-  trustProxy: true,
-  requestIdLogLabel: 'reqId',
-  disableRequestLogging: false,
-  requestIdHeader: 'x-request-id'
-});
+let fastify: FastifyInstance;
+let tlsClient: ModuleClient;
 
-// Register CORS
-await fastify.register(cors, {
-  origin: true,
-  credentials: true
-});
+// Initialize server (called lazily)
+const initServer = async () => {
+  if (fastify) return; // Already initialized
+  
+  fastify = Fastify({
+    logger: true,
+    trustProxy: true,
+    requestIdLogLabel: 'reqId',
+    disableRequestLogging: false,
+    requestIdHeader: 'x-request-id'
+  });
 
-// Initialize TLS Client
-const tlsClient = new ModuleClient();
+  // Register CORS
+  await fastify.register(cors, {
+    origin: true,
+    credentials: true
+  });
+
+  // Initialize TLS Client
+  tlsClient = new ModuleClient();
+  
+  setupRoutes();
+};
+
+const setupRoutes = () => {
 
 // Types
 interface ProxyRequestBody {
@@ -47,7 +59,7 @@ fastify.get('/health', async () => {
 });
 
 // Proxy endpoint - POST request
-fastify.post<{ Body: ProxyRequestBody }>('/proxy', async (request, reply) => {
+fastify.post<{ Body: ProxyRequestBody }>('/proxy', async (request: FastifyRequest<{ Body: ProxyRequestBody }>, reply: FastifyReply) => {
   try {
     // Check proxy secret if configured
     const proxySecret = process.env.PROXY_SECRET;
@@ -136,7 +148,7 @@ fastify.post<{ Body: ProxyRequestBody }>('/proxy', async (request, reply) => {
 });
 
 // Proxy endpoint - GET request (for simple proxying)
-fastify.get<{ Querystring: ProxyQueryParams }>('/proxy', async (request, reply) => {
+fastify.get<{ Querystring: ProxyQueryParams }>('/proxy', async (request: FastifyRequest<{ Querystring: ProxyQueryParams }>, reply: FastifyReply) => {
   try {
     // Check proxy secret if configured
     const proxySecret = process.env.PROXY_SECRET;
@@ -191,9 +203,12 @@ fastify.get<{ Querystring: ProxyQueryParams }>('/proxy', async (request, reply) 
     });
   }
 });
+}; // End of setupRoutes
 
 // Start server function (exported for use as module)
 export const startServer = async (): Promise<void> => {
+  await initServer(); // Initialize server before starting
+  
   try {
     const port = process.env.PORT || '3000';
     const host = process.env.HOST || '0.0.0.0';
@@ -207,5 +222,5 @@ export const startServer = async (): Promise<void> => {
   }
 };
 
-// Export fastify instance for testing or advanced usage
-export { fastify };
+// Export fastify getter for testing or advanced usage
+export const getFastify = () => fastify;
