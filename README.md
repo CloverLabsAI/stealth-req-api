@@ -44,12 +44,17 @@ HOST=0.0.0.0
 
 # Security: Set a random UUID to protect your proxy endpoint
 PROXY_SECRET=your-random-uuid-here
+
+# Default rotating proxy (optional)
+DEFAULT_PROXY_URL=http://user:pass@proxy.example.com:port
 ```
 
 Generate a secure UUID:
 ```bash
 node -e "console.log(crypto.randomUUID())"
 ```
+
+**Note:** If `DEFAULT_PROXY_URL` is set, all requests will be routed through this proxy by default. You can override it per-request by passing a different `proxyUrl` in the request body.
 
 ## Usage
 
@@ -298,6 +303,30 @@ This package provides two main components:
 
 ```
 Your App → Axios Client → Proxy Server → tlsclientwrapper → Target Website
+```
+
+## Default Rotating Proxy
+
+You can configure a default rotating proxy that will be used for all requests:
+
+```env
+# .env
+DEFAULT_PROXY_URL=http://username:password@proxy.example.com:port
+```
+
+**Benefits:**
+- All requests automatically route through the proxy
+- No need to specify `proxyUrl` in each request
+- Can be overridden per-request if needed
+- Supports rotating proxies for better anonymity
+
+**Override per request:**
+```typescript
+// This request will use a different proxy
+const response = await client.post('https://example.com', {
+  url: 'https://example.com',
+  proxyUrl: 'http://different-proxy.com:8080' // Override default
+});
 ```
 
 ## Security

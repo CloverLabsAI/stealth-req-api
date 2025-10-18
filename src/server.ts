@@ -66,7 +66,7 @@ fastify.post<{ Body: ProxyRequestBody }>('/proxy', async (request, reply) => {
       method = 'GET',
       headers = {},
       body = null,
-      proxyUrl = null,
+      proxyUrl = process.env.DEFAULT_PROXY_URL || null, // Use default proxy if not specified
       clientIdentifier = 'chrome_120',
       followRedirects = true,
       insecureSkipVerify = false,
@@ -150,7 +150,11 @@ fastify.get<{ Querystring: ProxyQueryParams }>('/proxy', async (request, reply) 
       }
     }
 
-    const { url, clientIdentifier = 'chrome_120', proxyUrl } = request.query;
+    const { 
+      url, 
+      clientIdentifier = 'chrome_120', 
+      proxyUrl = process.env.DEFAULT_PROXY_URL 
+    } = request.query;
 
     if (!url) {
       return reply.code(400).send({
