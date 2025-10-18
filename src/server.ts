@@ -126,10 +126,14 @@ fastify.post<{ Body: ProxyRequestBody }>('/proxy', async (request: FastifyReques
       });
     }
 
-    // Set response headers if they exist
+    // Set response headers if they exist, excluding compression headers
+    // tlsclientwrapper already decompresses the response
     if (response.headers && typeof response.headers === 'object') {
+      const compressionHeaders = ['content-encoding', 'content-length', 'transfer-encoding'];
       Object.entries(response.headers).forEach(([key, value]) => {
-        reply.header(key, value);
+        if (!compressionHeaders.includes(key.toLowerCase())) {
+          reply.header(key, value);
+        }
       });
     }
 
