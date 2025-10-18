@@ -126,27 +126,17 @@ fastify.post<{ Body: ProxyRequestBody }>('/proxy', async (request: FastifyReques
       });
     }
 
-    // Set response headers if they exist, but filter out compression-related headers
-    // The TLS client already decompresses the response, so we don't want the end client
-    // to try decompressing again (which causes Z_DATA_ERROR)
+    // Set response headers if they exist
     if (response.headers && typeof response.headers === 'object') {
       Object.entries(response.headers).forEach(([key, value]) => {
-        const lowerKey = key.toLowerCase();
-        // Skip content-encoding and content-length as they're invalid after decompression
-        if (lowerKey !== 'content-encoding' && lowerKey !== 'content-length') {
-          reply.header(key, value);
-        }
+        reply.header(key, value);
       });
     }
 
-    // Convert Uint8Array to Buffer if needed, otherwise send as-is
-    const responseBody = response.body instanceof Uint8Array 
-      ? Buffer.from(response.body) 
-      : response.body;
-
+    // Return the response body directly
     return reply
       .code(response.status || 200)
-      .send(responseBody);
+      .send(response.body);
 
   } catch (error: any) {
     request.log.error(error);
@@ -193,27 +183,21 @@ fastify.get<{ Querystring: ProxyQueryParams }>('/proxy', async (request: Fastify
     const session = new SessionClient(tlsClient, sessionOptions);
     const response = await session.get(url);
 
-    // Set response headers if they exist, but filter out compression-related headers
-    // The TLS client already decompresses the response, so we don't want the end client
-    // to try decompressing again (which causes Z_DATA_ERROR)
+    // Set response headers if they exist, excluding compression headers
+    // tlsclientwrapper already decompresses the response
     if (response.headers && typeof response.headers === 'object') {
+      const compressionHeaders = ['content-encoding', 'content-length', 'transfer-encoding'];
       Object.entries(response.headers).forEach(([key, value]) => {
-        const lowerKey = key.toLowerCase();
-        // Skip content-encoding and content-length as they're invalid after decompression
-        if (lowerKey !== 'content-encoding' && lowerKey !== 'content-length') {
+        if (!compressionHeaders.includes(key.toLowerCase())) {
           reply.header(key, value);
         }
       });
     }
 
-    // Convert Uint8Array to Buffer if needed, otherwise send as-is
-    const responseBody = response.body instanceof Uint8Array 
-      ? Buffer.from(response.body) 
-      : response.body;
-
+    // Return the response body directly
     return reply
       .code(response.status || 200)
-      .send(responseBody);
+      .send(response.body);
 
   } catch (error: any) {
     request.log.error(error);
