@@ -1,4 +1,5 @@
-import { createStealthClient, startServer } from './src/index.js';
+import { createStealthClient } from './src/index.js';
+import { startServer } from './src/server-entry.js';
 
 // Test configuration
 const SERVER_PORT = 3000;

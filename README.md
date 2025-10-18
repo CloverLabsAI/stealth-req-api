@@ -104,6 +104,18 @@ const postResponse = await client.post('https://api.example.com/data', {
 npm run server
 ```
 
+#### Programmatic Server Usage
+
+If you need to start the server programmatically in your code:
+
+```typescript
+import { startServer } from 'stealth-req-api/server';
+
+await startServer();
+```
+
+**Note:** The server module is separate from the client to avoid loading heavy dependencies (`tlsclientwrapper`) when you only need the client.
+
 #### Build and start (production)
 
 ```bash
