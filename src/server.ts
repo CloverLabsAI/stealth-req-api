@@ -139,9 +139,12 @@ fastify.post<{ Body: ProxyRequestBody }>('/proxy', async (request: FastifyReques
 
     // Stringify response body if it's not already a string
     let responseBody = response.body;
+    request.log.info(`Response body type: ${typeof responseBody}, isBuffer: ${Buffer.isBuffer(responseBody)}`);
     if (typeof responseBody !== 'string') {
+      request.log.info(`Stringifying response body`);
       responseBody = JSON.stringify(responseBody);
     }
+    request.log.info(`Final response body length: ${responseBody?.length}`);
 
     // Return the response body
     return reply
