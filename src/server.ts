@@ -128,6 +128,7 @@ fastify.post<{ Body: ProxyRequestBody }>('/proxy', async (request: FastifyReques
 
     // Set response headers if they exist, excluding compression headers
     // tlsclientwrapper already decompresses the response
+    const contentType = response.headers?.['content-type'] || response.headers?.['Content-Type'] || '';
     if (response.headers && typeof response.headers === 'object') {
       const compressionHeaders = ['content-encoding', 'content-length', 'transfer-encoding'];
       Object.entries(response.headers).forEach(([key, value]) => {
@@ -137,10 +138,16 @@ fastify.post<{ Body: ProxyRequestBody }>('/proxy', async (request: FastifyReques
       });
     }
 
-    // Return the response body directly
+    // Handle response body - if it's an object and content-type is JSON, stringify it
+    let responseBody = response.body;
+    if (typeof responseBody === 'object' && responseBody !== null && contentType.includes('application/json')) {
+      responseBody = JSON.stringify(responseBody);
+    }
+
+    // Return the response body
     return reply
       .code(response.status || 200)
-      .send(response.body);
+      .send(responseBody);
 
   } catch (error: any) {
     request.log.error(error);
@@ -189,6 +196,7 @@ fastify.get<{ Querystring: ProxyQueryParams }>('/proxy', async (request: Fastify
 
     // Set response headers if they exist, excluding compression headers
     // tlsclientwrapper already decompresses the response
+    const contentType = response.headers?.['content-type'] || response.headers?.['Content-Type'] || '';
     if (response.headers && typeof response.headers === 'object') {
       const compressionHeaders = ['content-encoding', 'content-length', 'transfer-encoding'];
       Object.entries(response.headers).forEach(([key, value]) => {
@@ -198,10 +206,16 @@ fastify.get<{ Querystring: ProxyQueryParams }>('/proxy', async (request: Fastify
       });
     }
 
-    // Return the response body directly
+    // Handle response body - if it's an object and content-type is JSON, stringify it
+    let responseBody = response.body;
+    if (typeof responseBody === 'object' && responseBody !== null && contentType.includes('application/json')) {
+      responseBody = JSON.stringify(responseBody);
+    }
+
+    // Return the response body
     return reply
       .code(response.status || 200)
-      .send(response.body);
+      .send(responseBody);
 
   } catch (error: any) {
     request.log.error(error);
