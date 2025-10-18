@@ -1,0 +1,52 @@
+{
+  "name": "stealth-req-api",
+  "version": "1.0.0",
+  "description": "High-performance proxy API and client using tlsclientwrapper with axios transport",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "bin": {
+    "stealth-req-server": "dist/bin/server.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "server": "tsx src/bin/server.ts",
+    "start": "npm run build && node dist/bin/server.js",
+    "dev": "tsx watch src/bin/server.ts",
+    "type-check": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "proxy",
+    "tls",
+    "fastify",
+    "api",
+    "typescript",
+    "axios",
+    "stealth",
+    "fingerprint"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/stealth-req-api.git"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "dependencies": {
+    "fastify": "^4.28.1",
+    "@fastify/cors": "^9.0.1",
+    "tlsclientwrapper": "^3.2.0",
+    "dotenv": "^16.4.5",
+    "axios": "^1.7.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.3"
+  }
+}
