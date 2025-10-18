@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import 'dotenv/config';
 
 export interface StealthClientConfig {
   baseURL?: string;
@@ -37,13 +38,13 @@ export interface ProxyResponse {
  */
 export function createStealthClient(config: StealthClientConfig = {}): AxiosInstance {
   const {
-    baseURL = 'http://localhost:3000',
+    baseURL = process.env.STEALTH_REQ_HOST || 'http://localhost:3000',
     timeout = 30000,
     tlsClientIdentifier = 'chrome_120',
     proxyUrl,
     followRedirects = true,
     insecureSkipVerify = false,
-    proxySecret = process.env.PROXY_SECRET // Auto-read from env
+    proxySecret = process.env.STEALTH_REQ_SECRET // Auto-read from env
   } = config;
 
   // Create base axios instance for communicating with the proxy server

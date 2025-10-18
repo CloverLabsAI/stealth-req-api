@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.0.5] - 2025-10-18
+
+### Changed
+- **Breaking:** Client now reads from `STEALTH_REQ_HOST` instead of requiring explicit `baseURL`
+- **Breaking:** Client now reads from `STEALTH_REQ_SECRET` instead of `PROXY_SECRET`
+- Updated `.env.example` with client configuration section
+- Updated README with new environment variable documentation
+
+### Migration
+If you were using `PROXY_SECRET` for the client, rename it to `STEALTH_REQ_SECRET`:
+```bash
+# Old
+PROXY_SECRET=your-secret
+
+# New
+STEALTH_REQ_HOST=http://your-server:3000
+STEALTH_REQ_SECRET=your-secret
+```
+
+## [1.0.4] - 2025-10-18
+
+### Fixed
+- Added `require` and `default` conditions to package.json exports field
+- Resolved `ERR_PACKAGE_PATH_NOT_EXPORTED` error
+
 ## [1.0.3] - 2025-10-18
 
 ### Fixed

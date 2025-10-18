@@ -70,7 +70,8 @@ const client = createStealthClient({
   baseURL: 'http://localhost:3000', // Your proxy server URL
   tlsClientIdentifier: 'chrome_120',
   timeout: 30000
-  // proxySecret automatically reads from process.env.PROXY_SECRET
+  // baseURL defaults to process.env.STEALTH_REQ_HOST
+  // proxySecret defaults to process.env.STEALTH_REQ_SECRET
 });
 
 // Use it like a normal axios instance
@@ -88,13 +89,17 @@ const postResponse = await client.post('https://api.example.com/data', {
 ```
 
 **Client Configuration Options:**
-- `baseURL` - URL of the stealth-req-api server (default: 'http://localhost:3000')
+- `baseURL` - URL of the stealth-req-api server (default: `process.env.STEALTH_REQ_HOST` or `'http://localhost:3000'`)
 - `timeout` - Request timeout in ms (default: 30000)
 - `tlsClientIdentifier` - TLS client identifier (default: 'chrome_120')
 - `proxyUrl` - Optional proxy URL to route requests through
 - `followRedirects` - Follow redirects (default: true)
 - `insecureSkipVerify` - Skip TLS verification (default: false)
-- `proxySecret` - Authentication secret (default: auto-reads from `process.env.PROXY_SECRET`)
+- `proxySecret` - Authentication secret (default: `process.env.STEALTH_REQ_SECRET`)
+
+**Environment Variables for Client:**
+- `STEALTH_REQ_HOST` - Server URL (e.g., `http://3.138.141.82:3000`)
+- `STEALTH_REQ_SECRET` - Authentication secret (must match server's `PROXY_SECRET`)
 
 ### As a Server
 
