@@ -443,7 +443,7 @@ describe("proxy server behavior", () => {
     const { app } = await createTestApp();
     t.after(() => app.close());
 
-    for (const method of ["DELETE", "HEAD", "OPTIONS"]) {
+    for (const method of ["GET", "DELETE", "HEAD", "OPTIONS"]) {
       const response = await app.inject({
         method: "POST",
         url: "/proxy",
@@ -456,6 +456,23 @@ describe("proxy server behavior", () => {
 
       assert.equal(response.statusCode, 400);
     }
+  });
+
+  it("rejects bodyBase64 for GET requests", async (t) => {
+    const { app } = await createTestApp();
+    t.after(() => app.close());
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/proxy",
+      payload: {
+        url: "https://example.com/get-bytes",
+        method: "GET",
+        bodyBase64: Buffer.from("payload").toString("base64"),
+      },
+    });
+
+    assert.equal(response.statusCode, 400);
   });
 });
 

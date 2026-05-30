@@ -79,7 +79,12 @@ interface CreateFastifyServerOptions {
   sessionFactory?: ProxySessionFactory;
 }
 
-const METHODS_WITHOUT_BODY_FORWARDING = new Set(["DELETE", "HEAD", "OPTIONS"]);
+const METHODS_WITHOUT_BODY_FORWARDING = new Set([
+  "GET",
+  "DELETE",
+  "HEAD",
+  "OPTIONS",
+]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
