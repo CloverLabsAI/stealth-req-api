@@ -79,7 +79,7 @@ interface CreateFastifyServerOptions {
   sessionFactory?: ProxySessionFactory;
 }
 
-const DEFAULT_TIMEOUT_MS = 30000;
+const METHODS_WITHOUT_BODY_FORWARDING = new Set(["DELETE", "HEAD", "OPTIONS"]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -144,6 +144,21 @@ function serializeRequestBody(
 
 function toTimeoutSeconds(timeoutMs: number): number {
   return Math.max(1, Math.ceil(timeoutMs / 1000));
+}
+
+function resolveRequestTimeout(
+  value: unknown,
+): { timeoutMs: number | null; error?: string } {
+  if (value === undefined || value === null || value === 0) {
+    return { timeoutMs: null };
+  }
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    return {
+      timeoutMs: null,
+      error: "timeout must be a non-negative number or null",
+    };
+  }
+  return { timeoutMs: value };
 }
 
 function decodeBase64ResponseBody(body: string): Buffer {
@@ -238,7 +253,8 @@ export const createFastifyServer = async (
     options.sessionFactory ?? defaultSessionFactory,
   );
 
-  return app;
+  fastify = app;
+  return fastify;
 };
 
 const setupRoutes = (
@@ -336,18 +352,9 @@ const setupRoutes = (
           });
         }
 
-        const timeout =
-          request.body.timeout === undefined
-            ? DEFAULT_TIMEOUT_MS
-            : request.body.timeout;
-        if (
-          typeof timeout !== "number" ||
-          !Number.isFinite(timeout) ||
-          timeout <= 0
-        ) {
-          return reply.code(400).send({
-            error: "timeout must be a positive number",
-          });
+        const timeout = resolveRequestTimeout(request.body.timeout);
+        if (timeout.error) {
+          return reply.code(400).send({ error: timeout.error });
         }
 
         const resolvedProxy = resolveProxyUrl(request.body);
@@ -360,7 +367,9 @@ const setupRoutes = (
           tlsClientIdentifier: clientIdentifier,
           followRedirects,
           insecureSkipVerify,
-          timeoutSeconds: toTimeoutSeconds(timeout),
+          ...(timeout.timeoutMs === null
+            ? { timeoutMilliseconds: 0 }
+            : { timeoutSeconds: toTimeoutSeconds(timeout.timeoutMs) }),
           ...(resolvedProxy.proxyUrl ? { proxyUrl: resolvedProxy.proxyUrl } : {}),
         };
 
@@ -382,6 +391,16 @@ const setupRoutes = (
           ...(serializedBody.isByteRequest ? { isByteRequest: true } : {}),
           ...(isByteResponse ? { isByteResponse: true } : {}),
         };
+        const hasRequestBody =
+          hasOwn(request.body, "body") || hasOwn(request.body, "bodyBase64");
+        if (
+          hasRequestBody &&
+          METHODS_WITHOUT_BODY_FORWARDING.has(upperMethod)
+        ) {
+          return reply.code(400).send({
+            error: `${upperMethod} requests with a body are not supported`,
+          });
+        }
 
         if (upperMethod === "GET") {
           response = await session.get(url, requestOptions);

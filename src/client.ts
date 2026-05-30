@@ -29,7 +29,7 @@ export interface ProxyRequestPayload {
   clientIdentifier?: string;
   followRedirects?: boolean;
   insecureSkipVerify?: boolean;
-  timeout?: number;
+  timeout?: number | null;
   isByteResponse?: boolean;
 }
 
@@ -109,8 +109,18 @@ export interface ProxyResponse {
   url: string;
 }
 
+const PROXY_TIMEOUT_BUFFER_MS = 5000;
+
 function isArrayBuffer(value: unknown): value is ArrayBuffer {
   return value instanceof ArrayBuffer;
+}
+
+function toProxyPayloadTimeout(timeoutMs: number): number | null {
+  return timeoutMs === 0 ? null : timeoutMs;
+}
+
+function toProxyHopTimeout(timeoutMs: number): number | undefined {
+  return timeoutMs === 0 ? undefined : timeoutMs + PROXY_TIMEOUT_BUFFER_MS;
 }
 
 function toBodyBuffer(value: unknown): Buffer | null {
@@ -306,7 +316,6 @@ export function createStealthClient(
   // Create base axios instance for communicating with the proxy server
   const proxyClient = axios.create({
     baseURL,
-    timeout: timeout + 5000, // Add buffer for proxy timeout
     headers: proxySecret ? { "X-Proxy-Secret": proxySecret } : {},
   });
 
@@ -358,14 +367,15 @@ export function createStealthClient(
         clientIdentifier: tlsClientIdentifier,
         followRedirects,
         insecureSkipVerify,
-        timeout: requestTimeout,
+        timeout: toProxyPayloadTimeout(requestTimeout),
         ...(isByteResponse ? { isByteResponse: true } : {}),
         ...(requestProxy.shouldSend ? { proxyUrl: requestProxy.proxyUrl ?? null } : {}),
       };
 
       // Make request through the proxy server
+      const proxyHopTimeout = toProxyHopTimeout(requestTimeout);
       const proxyResponse = await proxyClient.post<any>("/proxy", payload, {
-        timeout: requestTimeout + 5000,
+        ...(proxyHopTimeout === undefined ? {} : { timeout: proxyHopTimeout }),
         responseType: proxyResponseType,
         transformResponse: axiosConfig.transformResponse,
         validateStatus: () => true,

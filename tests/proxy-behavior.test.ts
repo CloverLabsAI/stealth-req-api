@@ -4,7 +4,7 @@ import { afterEach, describe, it } from "node:test";
 
 import { AxiosError } from "axios";
 import { createStealthClient } from "../src/client.ts";
-import { createFastifyServer } from "../src/server.ts";
+import { createFastifyServer, getFastify } from "../src/server.ts";
 
 interface RecordedSession {
   options: Record<string, unknown>;
@@ -387,6 +387,76 @@ describe("proxy server behavior", () => {
     assert.equal(response.statusCode, 200);
     assert.equal(sessions[0]?.options.timeoutSeconds, 1);
   });
+
+  it("accepts omitted, null, or zero timeout as no timeout", async (t) => {
+    const { app, sessions } = await createTestApp();
+    t.after(() => app.close());
+
+    const omittedTimeout = await app.inject({
+      method: "POST",
+      url: "/proxy",
+      payload: { url: "https://example.com/omitted-timeout" },
+    });
+    const nullTimeout = await app.inject({
+      method: "POST",
+      url: "/proxy",
+      payload: { url: "https://example.com/null-timeout", timeout: null },
+    });
+    const zeroTimeout = await app.inject({
+      method: "POST",
+      url: "/proxy",
+      payload: { url: "https://example.com/zero-timeout", timeout: 0 },
+    });
+
+    assert.equal(omittedTimeout.statusCode, 200);
+    assert.equal(nullTimeout.statusCode, 200);
+    assert.equal(zeroTimeout.statusCode, 200);
+    assert.equal("timeoutSeconds" in (sessions[0]?.options ?? {}), false);
+    assert.equal(sessions[0]?.options.timeoutMilliseconds, 0);
+    assert.equal("timeoutSeconds" in (sessions[1]?.options ?? {}), false);
+    assert.equal(sessions[1]?.options.timeoutMilliseconds, 0);
+    assert.equal("timeoutSeconds" in (sessions[2]?.options ?? {}), false);
+    assert.equal(sessions[2]?.options.timeoutMilliseconds, 0);
+  });
+
+  it("rejects negative timeouts", async (t) => {
+    const { app } = await createTestApp();
+    t.after(() => app.close());
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/proxy",
+      payload: { url: "https://example.com", timeout: -1 },
+    });
+
+    assert.equal(response.statusCode, 400);
+  });
+
+  it("sets createFastifyServer result as the exported singleton", async (t) => {
+    const { app } = await createTestApp();
+    t.after(() => app.close());
+
+    assert.equal(getFastify(), app);
+  });
+
+  it("rejects bodies for methods the tls wrapper cannot forward", async (t) => {
+    const { app } = await createTestApp();
+    t.after(() => app.close());
+
+    for (const method of ["DELETE", "HEAD", "OPTIONS"]) {
+      const response = await app.inject({
+        method: "POST",
+        url: "/proxy",
+        payload: {
+          url: `https://example.com/${method.toLowerCase()}`,
+          method,
+          body: "payload",
+        },
+      });
+
+      assert.equal(response.statusCode, 400);
+    }
+  });
 });
 
 describe("stealth client proxyUrl behavior", () => {
@@ -417,6 +487,36 @@ describe("stealth client proxyUrl behavior", () => {
         (capturedPayload as { proxyUrl?: string | null }).proxyUrl,
         null,
       );
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => (error ? reject(error) : resolve()));
+      });
+    }
+  });
+
+  it("sends timeout null when Axios timeout is zero", async () => {
+    let capturedPayload: unknown;
+    const server = http.createServer((request, response) => {
+      const chunks: Buffer[] = [];
+      request.on("data", (chunk) => chunks.push(chunk));
+      request.on("end", () => {
+        capturedPayload = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+        response.writeHead(200, { "content-type": "text/plain" });
+        response.end("ok");
+      });
+    });
+
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    try {
+      const address = server.address();
+      assert(address && typeof address === "object");
+      const client = createStealthClient({
+        baseURL: `http://127.0.0.1:${address.port}`,
+      });
+
+      await client.get("https://example.com/no-timeout", { timeout: 0 });
+
+      assert.equal((capturedPayload as { timeout?: number | null }).timeout, null);
     } finally {
       await new Promise<void>((resolve, reject) => {
         server.close((error) => (error ? reject(error) : resolve()));
