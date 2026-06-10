@@ -27,6 +27,8 @@
     "server": "tsx src/bin/server.ts",
     "start": "npm run build && node dist/bin/server.js",
     "dev": "tsx watch src/bin/server.ts",
+    "test": "tsx --test tests/**/*.test.ts && npm run test:types",
+    "test:types": "tsc --noEmit --allowImportingTsExtensions --target ES2022 --module ES2022 --moduleResolution node --strict --esModuleInterop --skipLibCheck tests/stealth-client-types.ts",
     "type-check": "tsc --noEmit",
     "prepare": "npm run build",
     "prepublishOnly": "npm run build"
